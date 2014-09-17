@@ -5,7 +5,10 @@ import thread
 import time
 sys.path.insert(0, '/usr/lib/Leap')
 import Leap as L
-from Leap import CircleGesture, SwipeGesture
+
+from Leap import CircleGesture
+from Leap import Gesture
+from Leap import SwipeGesture
 
 def call_amixer():
 	pass
@@ -16,11 +19,10 @@ def set_volume():
 print "Leap imported."
 
 class SampleListener(L.Listener):
-	finger_names = ['Thumb', 'Index', 'Middle', 'Ring', 'Pinky']
-	bone_names = ['Metacarpal', 'Proximal', 'Intermediate', 'Distal']
-	state_names = ['STATE_INVALID', 'STATE_START', 'STATE_UPDATE', 'STATE_END']
-	pvol = 0
-	volume = 0
+	VOL_SPEED = 3
+
+	pvol = 20
+	volume = 20
 	muted = False
 
 	def set_volume(self, volume):
@@ -63,10 +65,8 @@ class SampleListener(L.Listener):
 		print "Connected"
 
 		# Enable gestures
-		controller.enable_gesture(L.Gesture.TYPE_CIRCLE);
-		controller.enable_gesture(L.Gesture.TYPE_KEY_TAP);
-		controller.enable_gesture(L.Gesture.TYPE_SCREEN_TAP);
-		controller.enable_gesture(L.Gesture.TYPE_SWIPE);
+		controller.enable_gesture(Gesture.TYPE_CIRCLE);
+		controller.enable_gesture(Gesture.TYPE_SWIPE);
 
 	def on_disconnect(self, controller):
 		# Note: not dispatched when running in a debugger.
@@ -93,7 +93,7 @@ class SampleListener(L.Listener):
 
 		# Get gestures
 		for gesture in frame.gestures():
-			if gesture.type == L.Gesture.TYPE_CIRCLE:
+			if gesture.type == Gesture.TYPE_CIRCLE:
 				circle = CircleGesture(gesture)
 
 				# Determine clock direction using the angle between the pointable and the circle normal
@@ -102,30 +102,24 @@ class SampleListener(L.Listener):
 				else:
 					clockwiseness = "counterclockwise"
 
-				# Calculate the angle swept since the last frame
-				swept_angle = 0
-				if circle.state != L.Gesture.STATE_START:
-					previous_update = CircleGesture(controller.frame(1).gesture(circle.id))
-					swept_angle =  (circle.progress - previous_update.progress) * 2 * L.PI
-
-				mod = circle.progress * 3
+				mod = circle.progress * self.VOL_SPEED
 				if clockwiseness == 'counterclockwise':
 					mod = -mod
 
 				self.set_volume(self.volume + mod)
 
-				if gesture.state == 3:
+				if gesture.state is Gesture.STATE_STOP:
 					self.save_volume()
 
-			if gesture.type == L.Gesture.TYPE_SWIPE:
+			if gesture.type == Gesture.TYPE_SWIPE:
 				swipe = SwipeGesture(gesture)
 
-				if gesture.state == 3:
-					if swipe.direction[0] > 0.7:
+				if gesture.state is Gesture.STATE_STOP:
+					if swipe.direction[0] > 0.6:
 						self.next()
-					elif swipe.direction[0] < -0.7:
+					elif swipe.direction[0] < -0.6:
 						self.prev()
-					elif abs(swipe.direction[1]) > 0.7:
+					elif abs(swipe.direction[1]) > 0.6:
 						self.pause()
 
 def main():
