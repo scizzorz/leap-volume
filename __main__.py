@@ -19,7 +19,19 @@ class SampleListener(L.Listener):
 	finger_names = ['Thumb', 'Index', 'Middle', 'Ring', 'Pinky']
 	bone_names = ['Metacarpal', 'Proximal', 'Intermediate', 'Distal']
 	state_names = ['STATE_INVALID', 'STATE_START', 'STATE_UPDATE', 'STATE_END']
+	pvol = 0
 	volume = 0
+
+	def set_volume(self, volume):
+		vol = min(64, max(0, int(volume)))
+		if vol != self.pvol:
+			self.pvol = vol
+			os.system("amixer sset Master %d &>/dev/null" % vol)
+			print 'Set volume to %d' % vol
+
+	def save_volume(self):
+		self.volume = self.pvol
+		print 'Saved volume to %d' % self.pvol
 
 	def on_init(self, controller):
 		print "Initialized"
@@ -65,18 +77,10 @@ class SampleListener(L.Listener):
 				if clockwiseness == 'counterclockwise':
 					mod = -mod
 
-				os.system("amixer sset Master %d &>/dev/null" % int(self.volume + mod))
-				print 'Set volume to %d' % int(self.volume + mod)
+				self.set_volume(self.volume + mod)
 
 				if gesture.state == 3:
-					self.volume += mod
-
-					if self.volume < 0:
-						self.volume = 0
-					elif self.volume > 64:
-						self.volume = 64
-
-					print 'Saved volume to %d' % self.volume
+					self.save_volume()
 
 def main():
 	# Create a sample listener and controller
