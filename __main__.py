@@ -26,7 +26,7 @@ class SampleListener(L.Listener):
 		vol = min(64, max(0, int(volume)))
 		if vol != self.pvol:
 			self.pvol = vol
-			os.system("amixer sset Master %d &>/dev/null" % vol)
+			os.system('amixer -q sset Master %d' % vol)
 			print 'Set volume to %d' % vol
 
 	def save_volume(self):
