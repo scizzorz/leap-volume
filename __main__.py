@@ -21,6 +21,7 @@ class SampleListener(L.Listener):
 	state_names = ['STATE_INVALID', 'STATE_START', 'STATE_UPDATE', 'STATE_END']
 	pvol = 0
 	volume = 0
+	muted = False
 
 	def set_volume(self, volume):
 		vol = min(64, max(0, int(volume)))
@@ -32,6 +33,16 @@ class SampleListener(L.Listener):
 	def save_volume(self):
 		self.volume = self.pvol
 		print 'Saved volume to %d' % self.pvol
+
+	def mute(self):
+		self.muted = True
+		os.system('amixer -q sset Master toggle')
+		print 'Muted volume'
+
+	def unmute(self):
+		self.muted = False
+		os.system('amixer -q sset Master toggle')
+		print 'Unmuted volume'
 
 	def on_init(self, controller):
 		print "Initialized"
@@ -55,6 +66,18 @@ class SampleListener(L.Listener):
 	def on_frame(self, controller):
 		# Get the most recent frame and report some basic information
 		frame = controller.frame()
+
+		# Check for mute
+		if self.muted and len(frame.hands) == 0:
+			self.unmute()
+
+		for hand in frame.hands:
+			if self.muted and len(hand.fingers.extended()) < 5:
+				self.unmute()
+				break
+			if not self.muted and len(hand.fingers.extended()) == 5:
+				self.mute()
+				break
 
 		# Get gestures
 		for gesture in frame.gestures():
