@@ -5,7 +5,7 @@ import thread
 import time
 sys.path.insert(0, '/usr/lib/Leap')
 import Leap as L
-from Leap import CircleGesture
+from Leap import CircleGesture, SwipeGesture
 
 def call_amixer():
 	pass
@@ -43,6 +43,18 @@ class SampleListener(L.Listener):
 		self.muted = False
 		os.system('amixer -q sset Master toggle')
 		print 'Unmuted volume'
+
+	def next(self):
+		os.system('xdotool key XF86AudioNext')
+		print 'Next song'
+
+	def prev(self):
+		os.system('xdotool key XF86AudioPrev')
+		print 'Previous song'
+
+	def pause(self):
+		os.system('xdotool key XF86AudioPlay')
+		print 'Play/pause song'
 
 	def on_init(self, controller):
 		print "Initialized"
@@ -104,6 +116,17 @@ class SampleListener(L.Listener):
 
 				if gesture.state == 3:
 					self.save_volume()
+
+			if gesture.type == L.Gesture.TYPE_SWIPE:
+				swipe = SwipeGesture(gesture)
+
+				if gesture.state == 3:
+					if swipe.direction[0] > 0.7:
+						self.next()
+					elif swipe.direction[0] < -0.7:
+						self.prev()
+					elif abs(swipe.direction[1]) > 0.7:
+						self.pause()
 
 def main():
 	# Create a sample listener and controller
